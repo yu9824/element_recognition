@@ -156,10 +156,10 @@ def Ratio(products, materials, **options):
         x = np.linalg.solve(A, b)
         sr_x = pd.Series(x, index = materials_nonzero.columns, name = name)
         if match_all:
-            ar_memo = np.zeros(df_products.shape)
+            ar_memo = np.zeros(df_products.shape[1])
             for y, z in zip(x, df_materials.to_numpy()):
                 ar_memo += y * z
-            if np.allclose(ar_memo, df_products.to_numpy()):    # すべての元素が検算で正しいとされるならば
+            if np.allclose(ar_memo, df_products.loc[name].to_numpy()):    # すべての元素が検算で正しいとされるならば
                 df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
         else:
             df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
@@ -171,9 +171,11 @@ def Ratio(products, materials, **options):
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 150)
 
-    products = 'Li0.33La0.5TiO3'
+    # products = 'Li0.33La0.5TiO3'
+    products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
     materials = ['Li2O', 'LaO3', 'TiO2']
 
-    df_er = ElementRecognition(products)
-    df_r = Ratio(products, materials)
-    print(df_er, df_r)
+    # df_er = ElementRecognition(products)
+    df_r = Ratio(products, materials, match_all = True)
+    print(df_r)
+    # print(df_er, df_r)
