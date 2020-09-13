@@ -125,7 +125,6 @@ def Ratio(products, materials, **options):
 
     counta_nonzero = np.count_nonzero(materials_nonzero, axis = 1)
     index_list = [list(np.where(counta_nonzero == n)[0]) for n in range(len(counta_nonzero), 0, -1) if len(np.where(counta_nonzero == n)[0]) != 0]  # 降順でmaterialsに共通で入ってる数が多い順に並べ， 同じ数共通で入っている場合は二次元ベクトルで表現
-    i = 0
 
     # Ax = bのAを正方行列かつrank(A)=len(A)に整える．
     del_index_cand = [np.where(counta_nonzero == 0)[0]] # すべてが0 (materialsには入ってないけどproductsには入ってる元素) の組成比を削除． これはもし空集合であったとしても削除をしない，という条件を探れるので良い．　これを入れた理由は，基本的にnon_zeroの数が多い方から削除候補として用いているため，non_zero = 0が最後に削除されることになってしまうが， この条件は本来計算に含まれて胃はいけない事項であるから．
@@ -143,17 +142,31 @@ def Ratio(products, materials, **options):
             if np.linalg.matrix_rank(A) == len(materials) and A.shape[0] == A.shape[1]:   # 正方行列で， またはそれと同じ大きさのrankを持っているとき
                 break
         else:
-            print(materials_nonzero, products_nonzero)
+            print(materials_nonzero, '\n', products_nonzero)
             exit("We can't solve.\nWe can't get square matrix.")
     else:
-        print(materials_nonzero, products_nonzero)
-        exit("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
+        df_output = pd.DataFrame()
+        for name, series in products_nonzero.iterrows():
+            matrix = materials_nonzero.to_numpy().transpose() / series.to_numpy()
+            boolean = np.all(matrix, axis = 1)
+            if np.sum(boolean) != 0:
+                sr_x = pd.Series([1 / matrix[boolean].flatten()[0] if boo else 0 for boo in boolean], index = materials_nonzero.columns, name = name)
+                df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
+                continue
+            else:
+                print(materials_nonzero, '\n', products_nonzero)
+                exit("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
+        else:
+            return df_output.transpose()
 
     match_all = options['match_all'] if 'match_all' in options else False
     df_output = pd.DataFrame()
     for name, series in products_nonzero.iterrows():
         b = np.delete(series.to_numpy(), del_index)
-        x = np.linalg.solve(A, b)
+        try:
+            x = np.linalg.solve(A, b)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError("We can't solve.\n", A, b)
         sr_x = pd.Series(x, index = materials_nonzero.columns, name = name)
         if match_all:
             ar_memo = np.zeros(df_products.shape[1])
@@ -164,6 +177,8 @@ def Ratio(products, materials, **options):
         else:
             df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
     return df_output.transpose()
+
+
 
 '''
 materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
@@ -235,14 +250,20 @@ def MakeComposition(materials, ratio = None, **options):
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 150)
 
+    products = 'LaO3'
     # products = 'Li0.33La0.5TiO3'
-    products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
+    # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
+    # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6', 'Li2O']
     materials = ['Li2O', 'LaO3', 'TiO2']
 
+    # products = 'LiLaO2'
+    # products = ['Li2La2O4', 'LiLaO2']
+    # materials = ['Li2TiO3', 'Li2BaO3', 'LiLaO2']
+
     # df_er = ElementRecognition(products)
-    # df_r = Ratio(products, materials, match_all = True)
-    # print(df_r)
+    df_r = Ratio(products, materials, match_all = True)
+    print(df_r)
     # print(df_er, df_r)
 
-    df_m = MakeComposition(materials, ratio = [1, 2, 3])
-    print(df_m)
+    # df_m = MakeComposition(materials, ratio = [1, 2, 3])
+    # print(df_m)
