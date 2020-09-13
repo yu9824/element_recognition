@@ -1,1 +1,1 @@
-from .element_recognition import ElementRecognition, Ratio
+from .element_recognition import ElementRecognition, Ratio, MakeComposition
