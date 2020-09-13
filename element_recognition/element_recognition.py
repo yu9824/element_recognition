@@ -3,7 +3,7 @@ import pandas as pd
 import re
 
 # from pdb import set_trace
-from itertools import combinations
+from itertools import combinations, product
 from copy import copy
 
 default_elements = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
@@ -165,6 +165,70 @@ def Ratio(products, materials, **options):
             df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
     return df_output.transpose()
 
+'''
+materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
+ratio: default; None. list or np.ndarrayなど．何も入力されなければ適当な組成を生成する．
+options:
+    easy: boolean. default; True. ratioを入力しなかった場合自動生成する組成比の計算負荷を軽くするか否か．
+    max: int. default; 15. ratioを入力しなかった場合自動生成する組成比の最大組成数．
+    front: default; ['Li', 'Na', 'K', 'Rb', 'Cs']. 組成を生成する場合に優先的に前にする元素．前にあればあるほど前に優先的に行く．
+    back: default; ['I', 'Br', 'Cl', 'F', 'S', 'O']. 組成を生成する場合に優先的に後ろにする元素．前にあればあるほど後ろに優先的に行く．
+'''
+def MakeComposition(materials, ratio = None, **options):
+    easy = options['easy'] if 'easy' in options else True
+    max = options['max'] if 'max' in options else 15
+    front = options['front'] if 'front' in options else ['Li', 'Na', 'K', 'Rb', 'Cs']
+    back = options['back'] if 'back' in options else ['I', 'Br', 'Cl', 'F', 'S', 'O']
+
+    if ratio is None:
+        ratio = [i for i in product(np.arange(max), repeat = len(materials)) if sum(i) == max] if easy else [i for i in product(np.arange(max), repeat = len(materials)) if sum(i) != 0]
+    ratio = np.array(ratio)
+
+    if len(ratio.shape) == 1 and ratio.shape[0] == len(materials):
+        ratio = ratio.reshape(1, -1)
+    elif len(ratio.shape) != 2 or ratio.shape[1] != len(materials):
+        raise ValueError('A shape of ratio is not correct; The shape is', ratio.shape)
+
+    df_materials = ElementRecognition(materials)
+    df_products = pd.DataFrame(ratio @ df_materials.to_numpy(), columns = df_materials.columns)
+
+    compositions = []
+    for row in df_products.to_numpy():
+        dict_memo = {}  # keyが元素名，valueがたすべき文字列の辞書を作成
+        for i, x in enumerate(row):
+            if x == 0:
+                pass
+            elif x == 1:
+                dict_memo[df_materials.columns[i]] = df_materials.columns[i]
+            elif int(x) == float(x):
+                dict_memo[df_materials.columns[i]] = df_materials.columns[i] + str(int(x))
+            else:
+                dict_memo[df_materials.columns[i]] = df_materials.columns[i] + str(x)
+
+        # 本当はfront, backが正しく入力されてるか考えなきゃいけなさそう．
+        # 最後joinして文字列にするmemoリストを定義
+        memo = []
+
+        # frontに入ってるのを優先的に取り出す． (追加したら削除)
+        for f in front:
+            if f in dict_memo:
+                memo.append(dict_memo.pop(f))
+        # backに入ってないのを追加していく． (追加したら削除)
+        keys = dict_memo.copy().keys()
+        for k in keys:
+            if k not in back:
+                memo.append(dict_memo.pop(k))
+        # 残ったbackの逆順に追加．(追加したら削除)
+        for b in reversed(back):
+            if b in dict_memo:
+                memo.append(dict_memo.pop(b))
+                if len(dict_memo) == 0:
+                    break
+
+        compositions.append(''.join(memo))
+
+    df_products.index = compositions
+    return df_products
 
 
 
@@ -176,6 +240,9 @@ if __name__ == '__main__':
     materials = ['Li2O', 'LaO3', 'TiO2']
 
     # df_er = ElementRecognition(products)
-    df_r = Ratio(products, materials, match_all = True)
-    print(df_r)
+    # df_r = Ratio(products, materials, match_all = True)
+    # print(df_r)
     # print(df_er, df_r)
+
+    df_m = MakeComposition(materials, ratio = [1, 2, 3])
+    print(df_m)
