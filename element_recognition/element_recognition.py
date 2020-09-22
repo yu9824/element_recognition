@@ -143,7 +143,7 @@ def Ratio(products, materials, **options):
                 break
         else:
             print(materials_nonzero, '\n', products_nonzero)
-            exit("We can't solve.\nWe can't get square matrix.")
+            raise ValueError("We can't solve.\nWe can't get square matrix.")
     else:
         df_output = pd.DataFrame()
         for name, series in products_nonzero.iterrows():
@@ -155,7 +155,7 @@ def Ratio(products, materials, **options):
                 continue
             else:
                 print(materials_nonzero, '\n', products_nonzero)
-                exit("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
+                raise ValueError("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
         else:
             return df_output.transpose()
 
