@@ -46,14 +46,13 @@ def ElementRecognition(compositions, **options):
 
     ratio_ = np.zeros([len(lst_compositions), len(elements)])
     for i, comp in enumerate(lst_compositions):
-        comp = lst_compositions[i]
         del_index = [j for j, x in enumerate(comp) if x.isupper() or x in delimiter]    # 大文字や()のときで区切り文字．
 
         dict_poly = {poly: comp.find(poly) for poly in polyatomic_ion if comp.find(poly) != -1}
         for poly, k in dict_poly.items():   # 多原子イオンを持っている場合は多原子イオンの部分を分割する値を削除．
             del_index = [j for j in del_index if j <= k or k + len(poly) <= j]
 
-        dict_comp = {}  #元素の位置(index)と組成数(value)を取っておく辞書
+        dict_comp = {}  # key: index(元素の位置), value: value(組成数), symbol(元素記号, 多原子イオンも含む)
         dict_brackets = {'f':[], 'b':[], 'value':[]}    # かっこの開始位置 (f)， 終了位置 (b), かっこ内の元素を何倍するか (value) を取っておく辞書
         for j in range(len(del_index)): #'(', ')', 'polyatomic_ion', 'monatomic_ion'がそれぞれどこか記録．
             # aとして抜き出す部分を取り出す．
@@ -61,7 +60,7 @@ def ElementRecognition(compositions, **options):
 
             # 取り出したaを数値なのか，()なのかなど認識し，数字と元素に分けるなどする．
             if a in polyatomic_ion: #'NH4'(polyatomic_ion)
-                dict_comp[a] = {'index':del_index[j], 'value':1.0}
+                dict_comp[del_index[j]] = {'value':1.0, 'symbol':a}
             elif a == delimiter[0]: #'('
                 dict_brackets['f'].append(del_index[j])
             elif a == delimiter[1]: #')'
@@ -73,10 +72,10 @@ def ElementRecognition(compositions, **options):
             else:   #monatomic_ion
                 for k, s in enumerate(a):
                     if not s.isalpha():
-                        dict_comp[a[:k]] = {'index':del_index[j], 'value':float(a[k:])}
+                        dict_comp[del_index[j]] = {'value':float(a[k:]), 'symbol':a[:k]}
                         break
-                    elif k + 1 == len(a):   #最後までs.isalpha() == Trueとならなかった場合．
-                        dict_comp[a] = {'index':del_index[j], 'value':1.0}
+                else:   #最後までs.isalpha() == Falseとならなかった　(数字が現れなかった) 場合．
+                    dict_comp[del_index[j]] = {'value':1.0, 'symbol':a}
 
         #()のペアを一致させるための処理
         dict_brackets['f'].reverse()
@@ -89,14 +88,14 @@ def ElementRecognition(compositions, **options):
                         break
                     else:
                         k += 1
-
-        for ele in dict_comp:
+        
+        for index in dict_comp:
             for j in range(len(dict_brackets['f'])):    #()の中に入ってる元素の組成数をn倍にする
-                if dict_brackets['f'][j] < dict_comp[ele]['index'] and dict_comp[ele]['index'] < dict_brackets['b'][j]:
-                    dict_comp[ele]['value'] *= dict_brackets['value'][j]
+                if dict_brackets['f'][j] < index and index < dict_brackets['b'][j]:
+                    dict_comp[index]['value'] *= dict_brackets['value'][j]
             for j in range(len(elements)):  # 含まれてる元素のそのものの値を抜き出す．
-                if ele == elements[j]:
-                    ratio_[i][j] = dict_comp[ele]['value']
+                if dict_comp[index]['symbol'] == elements[j]:
+                    ratio_[i][j] += dict_comp[index]['value']
 
     df_output = pd.DataFrame(ratio_.copy(), index = lst_compositions, columns = elements)
 
@@ -193,7 +192,12 @@ def MakeComposition(materials, ratio = None, **options):
     easy = options['easy'] if 'easy' in options else True
     max = options['max'] if 'max' in options else 15
     front = options['front'] if 'front' in options else ['Li', 'Na', 'K', 'Rb', 'Cs']
-    back = options['back'] if 'back' in options else ['I', 'Br', 'Cl', 'F', 'S', 'O']
+    if 'back' in options:   # backとfrontでfrontが優先されるため．
+        back = options['back']
+        front = [ele for ele in front if ele not in back]
+    else:
+        back = ['I', 'Br', 'Cl', 'F', 'S', 'O']
+    
 
     if ratio is None:
         ratio = [i for i in product(np.arange(max), repeat = len(materials)) if sum(i) == max] if easy else [i for i in product(np.arange(max), repeat = len(materials)) if sum(i) != 0]
