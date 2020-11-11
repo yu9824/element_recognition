@@ -5,7 +5,7 @@ with open('requirements.txt') as requirements_file:
 
 setup(
     name='element_recognition',
-    version='0.0.4',
+    version='0.0.5',
     description='You can get element ratio.',
     author='yu-9824',
     author_email='yu.9824@gmail.com',
