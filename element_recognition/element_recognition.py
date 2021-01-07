@@ -8,7 +8,7 @@ from copy import copy
 
 default_elements = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
 # --- tools ---
-def flatten_and_chomp(x):
+def _flatten_and_chomp(x):
     # とにかく一次元のリスト (or np.ndarray) 化
     if type(x) == np.ndarray:
         y = x.flatten()
@@ -20,7 +20,7 @@ def flatten_and_chomp(x):
     return list(map(lambda x:x.replace(' ',''), y))
 
 # --- main function ---
-def ElementRecognition(compositions, **options):
+def element_recognition(compositions, **options):
     '''
     ++ INPUT ++
     compositions = 組成．一次元のリストを前提．(文字列も可)
@@ -29,7 +29,7 @@ def ElementRecognition(compositions, **options):
     ++ OUTPUT ++
     pd.DataFrame, columns = elements, index = compositions, compositions中に含まれる元素の数をカウント．
     '''
-    lst_compositions = flatten_and_chomp(compositions)
+    lst_compositions = _flatten_and_chomp(compositions)
 
     elements = options['elements'] if 'elements' in options else default_elements
     delimiter = ('(', ')')  #'()'認識用
@@ -102,7 +102,7 @@ def ElementRecognition(compositions, **options):
     return df_output
 
 
-def Ratio(products, materials, **options):
+def ratio(products, materials, **options):
     '''
     ++ INPUT ++
     products: 生成物，文字列，リストどちらでも．(必須)
@@ -113,8 +113,8 @@ def Ratio(products, materials, **options):
     pd.DataFrame, columnsはmaterials, indexはproducts, それぞれの割合が入ってる．
     もし負の割合がある場合は，その原料を混ぜただけではその生成物ができないことを表す．
     '''
-    products = flatten_and_chomp(products)
-    materials = flatten_and_chomp(materials)
+    products = _flatten_and_chomp(products)
+    materials = _flatten_and_chomp(materials)
 
     df_products = ElementRecognition(products)
     df_materials = ElementRecognition(materials)
@@ -180,7 +180,7 @@ def Ratio(products, materials, **options):
     return df_output.transpose()
 
 
-def MakeComposition(materials, ratio = None, **options):
+def make_composition(materials, ratio = None, **options):
     '''
     materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
     ratio: default; None. list or np.ndarrayなど．何も入力されなければ適当な組成を生成する．
