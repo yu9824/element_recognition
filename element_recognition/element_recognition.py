@@ -102,7 +102,7 @@ def element_recognition(compositions, **options):
     return df_output
 
 
-def ratio(products, materials, **options):
+def get_ratio(products, materials, **options):
     '''
     ++ INPUT ++
     products: 生成物，文字列，リストどちらでも．(必須)
@@ -180,7 +180,7 @@ def ratio(products, materials, **options):
     return df_output.transpose()
 
 
-def make_composition(materials, ratio = None, **options):
+def make_compositions(materials, ratio = None, **options):
     '''
     materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
     ratio: default; None. list or np.ndarrayなど．何も入力されなければ適当な組成を生成する．
