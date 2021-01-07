@@ -116,8 +116,8 @@ def get_ratio(products, materials, **options):
     products = _flatten_and_chomp(products)
     materials = _flatten_and_chomp(materials)
 
-    df_products = ElementRecognition(products)
-    df_materials = ElementRecognition(materials)
+    df_products = element_recognition(products)
+    df_materials = element_recognition(materials)
 
     products_nonzero = df_products.iloc[:, list(set(df_products.values.nonzero()[1]))] # pd.Series
     materials_nonzero = df_materials.loc[:, products_nonzero.columns].transpose() # pd.Seriesに合わせてindexに元素 ('Li'etc.) が来るようにtranspose()
@@ -209,7 +209,7 @@ def make_compositions(materials, ratio = None, **options):
     elif len(ratio.shape) != 2 or ratio.shape[1] != len(materials):
         raise ValueError('A shape of ratio is not correct; The shape is', ratio.shape)
 
-    df_materials = ElementRecognition(materials)
+    df_materials = element_recognition(materials)
     df_products = pd.DataFrame(ratio @ df_materials.to_numpy(), columns = df_materials.columns)
 
     compositions = []
@@ -265,7 +265,7 @@ if __name__ == '__main__':
     # products = ['Li2La2O4', 'LiLaO2']
     # materials = ['Li2TiO3', 'Li2BaO3', 'LiLaO2']
 
-    # df_er = ElementRecognition(products)
+    # df_er = element_recognition(products)
     df_r = Ratio(products, materials, match_all = True)
     print(df_r)
     # print(df_er, df_r)
