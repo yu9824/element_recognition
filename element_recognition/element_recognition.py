@@ -19,16 +19,16 @@ def flatten_and_chomp(x):
     # 空白を削除してリストとして統一
     return list(map(lambda x:x.replace(' ',''), y))
 
-'''
-++ INPUT ++
-compositions = 組成．一次元のリストを前提．(文字列も可)
-elements: default "Og" (オガネソン, Oganesson)までの118元素のリスト．元素認識を行うにあたって必要な元素リストをカスタマイズ可能．
-
-++ OUTPUT ++
-pd.DataFrame, columns = elements, index = compositions, compositions中に含まれる元素の数をカウント．
-'''
 # --- main function ---
 def ElementRecognition(compositions, **options):
+    '''
+    ++ INPUT ++
+    compositions = 組成．一次元のリストを前提．(文字列も可)
+    elements: default "Og" (オガネソン, Oganesson)までの118元素のリスト．元素認識を行うにあたって必要な元素リストをカスタマイズ可能．
+
+    ++ OUTPUT ++
+    pd.DataFrame, columns = elements, index = compositions, compositions中に含まれる元素の数をカウント．
+    '''
     lst_compositions = flatten_and_chomp(compositions)
 
     elements = options['elements'] if 'elements' in options else default_elements
@@ -101,18 +101,18 @@ def ElementRecognition(compositions, **options):
 
     return df_output
 
-'''
-++ INPUT ++
-products: 生成物，文字列，リストどちらでも．(必須)
-materials: 原料．リスト．無駄な原料を入れると計算できなくなることが多いので入れるべきではない．(必須)
-mathch_all: Default: False, boolean. 検算してすべての元素の割合が合ってるかを確かめ，一つでも元素の数が合わないと
-
-++ OUTPUT ++
-pd.DataFrame, columnsはmaterials, indexはproducts, それぞれの割合が入ってる．
-もし負の割合がある場合は，その原料を混ぜただけではその生成物ができないことを表す．
-'''
 
 def Ratio(products, materials, **options):
+    '''
+    ++ INPUT ++
+    products: 生成物，文字列，リストどちらでも．(必須)
+    materials: 原料．リスト．無駄な原料を入れると計算できなくなることが多いので入れるべきではない．(必須)
+    mathch_all: Default: False, boolean. 検算してすべての元素の割合が合ってるかを確かめ，一つでも元素の数が合わないと
+
+    ++ OUTPUT ++
+    pd.DataFrame, columnsはmaterials, indexはproducts, それぞれの割合が入ってる．
+    もし負の割合がある場合は，その原料を混ぜただけではその生成物ができないことを表す．
+    '''
     products = flatten_and_chomp(products)
     materials = flatten_and_chomp(materials)
 
@@ -173,22 +173,23 @@ def Ratio(products, materials, **options):
                 ar_memo += y * z
             if np.allclose(ar_memo, df_products.loc[name].to_numpy()):    # すべての元素が検算で正しいとされるならば
                 df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
+            else:
+                df_output = pd.concat([df_output, pd.Series([None] * len(materials_nonzero.columns), index = materials_nonzero.columns, name = name)], axis = 1, sort = False)
         else:
             df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
     return df_output.transpose()
 
 
-
-'''
-materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
-ratio: default; None. list or np.ndarrayなど．何も入力されなければ適当な組成を生成する．
-options:
-    easy: boolean. default; True. ratioを入力しなかった場合自動生成する組成比の計算負荷を軽くするか否か．
-    max: int. default; 15. ratioを入力しなかった場合自動生成する組成比の最大組成数．
-    front: default; ['Li', 'Na', 'K', 'Rb', 'Cs']. 組成を生成する場合に優先的に前にする元素．前にあればあるほど前に優先的に行く．
-    back: default; ['I', 'Br', 'Cl', 'F', 'S', 'O']. 組成を生成する場合に優先的に後ろにする元素．前にあればあるほど後ろに優先的に行く．
-'''
 def MakeComposition(materials, ratio = None, **options):
+    '''
+    materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
+    ratio: default; None. list or np.ndarrayなど．何も入力されなければ適当な組成を生成する．
+    options:
+        easy: boolean. default; True. ratioを入力しなかった場合自動生成する組成比の計算負荷を軽くするか否か．
+        max: int. default; 15. ratioを入力しなかった場合自動生成する組成比の最大組成数．
+        front: default; ['Li', 'Na', 'K', 'Rb', 'Cs']. 組成を生成する場合に優先的に前にする元素．前にあればあるほど前に優先的に行く．
+        back: default; ['I', 'Br', 'Cl', 'F', 'S', 'O']. 組成を生成する場合に優先的に後ろにする元素．前にあればあるほど後ろに優先的に行く．
+    '''
     easy = options['easy'] if 'easy' in options else True
     max = options['max'] if 'max' in options else 15
     front = options['front'] if 'front' in options else ['Li', 'Na', 'K', 'Rb', 'Cs']
@@ -254,7 +255,7 @@ def MakeComposition(materials, ratio = None, **options):
 if __name__ == '__main__':
     pd.set_option('display.max_columns', 150)
 
-    products = 'LaO3'
+    products = ['LaO3', 'Li2LaO']
     # products = 'Li0.33La0.5TiO3'
     # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
     # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6', 'Li2O']
