@@ -112,6 +112,11 @@ def get_ratio(products, materials, **options):
     ++ OUTPUT ++
     pd.DataFrame, columnsはmaterials, indexはproducts, それぞれの割合が入ってる．
     もし負の割合がある場合は，その原料を混ぜただけではその生成物ができないことを表す．
+    >>> materials = ['Li2O', 'LaO3', 'TiO2']
+    >>> products = ['Li2LaTiO6']
+    >>> get_ratio(products, materials)
+               Li2O  LaO3  TiO2
+    Li2LaTiO6   1.0   1.0   1.0
     '''
     products = _flatten_and_chomp(products)
     materials = _flatten_and_chomp(materials)
@@ -253,22 +258,24 @@ def make_compositions(materials, ratio = None, **options):
 
 
 if __name__ == '__main__':
-    pd.set_option('display.max_columns', 150)
+    # pd.set_option('display.max_columns', 150)
 
-    products = ['LaO3', 'Li2LaO']
-    # products = 'Li0.33La0.5TiO3'
-    # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
-    # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6', 'Li2O']
-    materials = ['Li2O', 'LaO3', 'TiO2']
+    # products = ['LaO3', 'Li2LaO']
+    # # products = 'Li0.33La0.5TiO3'
+    # # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
+    # # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6', 'Li2O']
+    # materials = ['Li2O', 'LaO3', 'TiO2']
 
-    # products = 'LiLaO2'
-    # products = ['Li2La2O4', 'LiLaO2']
-    # materials = ['Li2TiO3', 'Li2BaO3', 'LiLaO2']
+    # # products = 'LiLaO2'
+    # # products = ['Li2La2O4', 'LiLaO2']
+    # # materials = ['Li2TiO3', 'Li2BaO3', 'LiLaO2']
 
-    # df_er = element_recognition(products)
-    df_r = Ratio(products, materials, match_all = True)
-    print(df_r)
-    # print(df_er, df_r)
+    # # df_er = element_recognition(products)
+    # df_r = Ratio(products, materials, match_all = True)
+    # print(df_r)
+    # # print(df_er, df_r)
 
-    # df_m = MakeComposition(materials, ratio = [1, 2, 3])
-    # print(df_m)
+    # # df_m = MakeComposition(materials, ratio = [1, 2, 3])
+    # # print(df_m)
+    from doctest import testmod
+    testmod(verbose=True)
