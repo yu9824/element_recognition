@@ -221,7 +221,7 @@ def make_compositions(materials, ratio = None, prec = 2, easy = True, max_comp =
             elif ceil(x) == floor(x):   # 0と1以外の整数のとき
                 dict_memo[df_materials.columns[i]] = df_materials.columns[i] + str(ceil(x))
             else:   # 小数のとき
-                _temp = ['{0:.{1}f}'.format(x, prec) for prec in range(1, max_show_prec+1)]
+                _temp = ['{0:.{1}f}'.format(x, prec) for prec in range(max_show_prec+1)]
                 base = _temp.pop(-1)
                 s = base
                 while _temp:
