@@ -6,9 +6,10 @@ from itertools import combinations, product
 from copy import copy
 from math import ceil, floor
 
+
 default_elements = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
 # --- tools ---
-def _flatten_and_chomp(x):
+def _flatten_and_trim(x):
     # とにかく一次元のリスト (or np.ndarray) 化
     if type(x) == np.ndarray:
         y = x.flatten()
@@ -20,18 +21,25 @@ def _flatten_and_chomp(x):
     return list(map(lambda x:x.replace(' ',''), y))
 
 # --- main function ---
-def element_recognition(compositions, **options):
+def element_recognition(compositions, elements = None):
     '''
-    ++ INPUT ++
-    compositions = 組成．一次元のリストを前提．(文字列も可)
-    elements: default "Og" (オガネソン, Oganesson)までの118元素のリスト．元素認識を行うにあたって必要な元素リストをカスタマイズ可能．
+    Parameters
+    ----------
+    compositions: str or list
+        組成．一次元のリストを前提．(文字列も可)
+    elements: list, default None. It means "Og" (オガネソン, Oganesson)までの118元素のリスト．
+        元素認識を行うにあたって必要な元素リストをカスタマイズ可能．
 
-    ++ OUTPUT ++
+    Returns
+    ----------
     pd.DataFrame, columns = elements, index = compositions, compositions中に含まれる元素の数をカウント．
     '''
-    lst_compositions = _flatten_and_chomp(compositions)
 
-    elements = options['elements'] if 'elements' in options else default_elements
+    if elements is None:
+        elements = default_elements
+
+    lst_compositions = _flatten_and_trim(compositions)
+
     delimiter = ('(', ')')  #'()'認識用
 
     # 単原子イオンと多原子イオンを判別し，別々のリストに分ける．
@@ -102,24 +110,37 @@ def element_recognition(compositions, **options):
     return df_output
 
 
-def get_ratio(products, materials, match_all = True):
+def get_ratio(products, materials, match_all = True, elements = None):
     '''
-    ++ INPUT ++
-    products: 生成物，文字列，リストどちらでも．(必須)
-    materials: 原料．リスト．無駄な原料を入れると計算できなくなることが多いので入れるべきではない．(必須)
-    mathch_all: Default: True, boolean. 検算してすべての元素の割合が合ってるかを確かめ，一つでも元素の数が合わないと
+    Parameters
+    ----------
+    products: str or list
+        生成物，文字列，リストどちらでも．(必須)
+    
+    materials: list
+        原料．リスト．無駄な原料を入れると計算できなくなることが多いので入れるべきではない．(必須)
+    
+    mathch_all: bool, default True
+        検算してすべての元素の割合が合ってるかを確かめ，一つでも元素の数が合わないとき，Noneとして返す．
 
-    ++ OUTPUT ++
+    elements: list, default None.
+        This is variable for element_recognition function.
+
+    Returns
+    ----------
     pd.DataFrame, columnsはmaterials, indexはproducts, それぞれの割合が入ってる．
     もし負の割合がある場合は，その原料を混ぜただけではその生成物ができないことを表す．
+
+    Examples
+    ----------
     >>> materials = ['Li2O', 'LaO3', 'TiO2']
     >>> products = ['Li2LaTiO6']
     >>> get_ratio(products, materials)
                Li2O  LaO3  TiO2
     Li2LaTiO6   1.0   1.0   1.0
     '''
-    products = _flatten_and_chomp(products)
-    materials = _flatten_and_chomp(materials)
+    products = _flatten_and_trim(products)
+    materials = _flatten_and_trim(materials)
 
     df_products = element_recognition(products)
     df_materials = element_recognition(materials)
@@ -184,7 +205,7 @@ def get_ratio(products, materials, match_all = True):
     return df_output.transpose()
 
 
-def make_compositions(materials, ratio = None, prec = 2, easy = True, max_comp = 15, front = None, back = None, max_show_prec = 3):
+def make_compositions(materials, ratio = None, easy = True, max_comp = 15, front = None, back = None, max_show_prec = 3, elements = None):
     '''
     Parameters
     ----------
@@ -197,7 +218,7 @@ def make_compositions(materials, ratio = None, prec = 2, easy = True, max_comp =
     easy: bool, default True
         Whether or not to lighten the density of the composition generated when the ratio is None; lighten when True.
 
-    max: int, default 15
+    max_comp: int, default 15
         The maximum number of composition ratios that will be automatically generated  when the ratio is None.
 
     front: list, default None. It means ('Li', 'Na', 'K', 'Rb', 'Cs'). 
@@ -205,6 +226,12 @@ def make_compositions(materials, ratio = None, prec = 2, easy = True, max_comp =
     
     back: list, default None. It means ('I', 'Br', 'Cl', 'F', 'S', 'O').
         An element that is preferentially placed behind a composition when it is generated. The more elements are in front, the more elements are in the back. If duplicate elements are specified, back is given priority.
+
+    max_show_prec: int, default 3
+        The maximum number of decimal places to display when creating a compound.
+
+    elements: list, default None.
+        This is variable for element_recognition function.
 
     Returns
     ----------
