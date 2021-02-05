@@ -184,18 +184,46 @@ def get_ratio(products, materials, match_all = True):
     return df_output.transpose()
 
 
-def make_compositions(materials, ratio = None, prec = 2, easy = True, max_comp = 15, front = ['Li', 'Na', 'K', 'Rb', 'Cs'], back = ['I', 'Br', 'Cl', 'F', 'S', 'O'], max_show_prec = 3):
+def make_compositions(materials, ratio = None, prec = 2, easy = True, max_comp = 15, front = None, back = None, max_show_prec = 3):
     '''
-    materials: list. 必須. e.g.) ['Li2O', 'LaO3', 'TiO2']
-    ratio: default; None. list or np.ndarrayなど．何も入力されなければ適当な組成を生成する．
-    easy: boolean. default; True. ratioを入力しなかった場合自動生成する組成比の計算負荷を軽くするか否か．
-    max: int. default; 15. ratioを入力しなかった場合自動生成する組成比の最大組成数．
-    front: default; ['Li', 'Na', 'K', 'Rb', 'Cs']. 組成を生成する場合に優先的に前にする元素．前にあればあるほど前に優先的に行く．重複する元素が指定された場合はbackが優先される．
-    back: default; ['I', 'Br', 'Cl', 'F', 'S', 'O']. 組成を生成する場合に優先的に後ろにする元素．前にあればあるほど後ろに優先的に行く．重複する元素が指定された場合はbackが優先される．
+    Parameters
+    ----------
+    materials : list
+        e.g.) ['Li2O', 'LaO3', 'TiO2']
+
+    ratio: 2D-list (pd.DataFrame, np.ndarray etc.), default None
+        If no input is given, an appropriate composition is generated.
+
+    easy: bool, default True
+        Whether or not to lighten the density of the composition generated when the ratio is None; lighten when True.
+
+    max: int, default 15
+        The maximum number of composition ratios that will be automatically generated  when the ratio is None.
+
+    front: list, default None. It means ('Li', 'Na', 'K', 'Rb', 'Cs'). 
+        An element that is preferentially in front of a composition when it is generated. The more elements are in front, the more priority is given to the front. If duplicate elements are specified, back is given priority.
+    
+    back: list, default None. It means ('I', 'Br', 'Cl', 'F', 'S', 'O').
+        An element that is preferentially placed behind a composition when it is generated. The more elements are in front, the more elements are in the back. If duplicate elements are specified, back is given priority.
+
+    Returns
+    ----------
+    pd.DataFrame. The index represents the composition of the generated material.
     '''
 
+    # frontとbackに関する処理
+    default_front = ('Li', 'Na', 'K', 'Rb', 'Cs')
+    default_back = ('I', 'Br', 'Cl', 'F', 'S', 'O')
     # 重複を削除
-    front = [ele for ele in front if ele not in back]
+    if front is None and back is None:
+        front = default_front
+        back = default_back
+    elif front is None:
+        front = [ele for ele in default_front if ele not in back]
+    elif back is None:
+        back = [ele for ele in default_back if ele not in front]
+    else:   # 両方が指定された場合はbackを優先
+        front = [ele for ele in front if ele not in back]
 
     # 何も入力されなければ自動生成
     if ratio is None:
