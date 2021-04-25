@@ -21,7 +21,7 @@ get_ratio(products = ['LiLa2TiO6'], materials = ['Li2O', 'La2O3', 'TiO2'])
 ```
 ```
                Li2O  La2O3  TiO2
-    Li2LaTiO6   1.0   1.0   1.0
+    Li2La2TiO6   1.0   1.0   1.0
 ```
 
 #### ```make_compositions```
