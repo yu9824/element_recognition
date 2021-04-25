@@ -5,6 +5,11 @@ A package that organizes compositions written as strings into pandas.DataFrames,
 It works well with [ternary_diagram](https://pypi.org/project/ternary-diagram/) (This makes it easy to generate beautiful ternary diagram.).
 Please check it out.
 
+## How to install 
+```bash
+pip install element-recognition
+```
+
 ## How to use
 If you want to know in details, see [example](https://github.com/yu-9824/element_recognition/tree/main/example).
 
@@ -14,7 +19,7 @@ If you want to know in details, see [example](https://github.com/yu-9824/element
 from element_recognition import get_ratio, make_compositions
 ```
 
-#### ```get_ratio```
+### ```get_ratio```
 This is a function that returns a pandas.DataFrame of mixing ratios given a compound and a raw material.
 ```python
 get_ratio(products = ['LiLa2TiO6'], materials = ['Li2O', 'La2O3', 'TiO2'])
@@ -24,7 +29,7 @@ get_ratio(products = ['LiLa2TiO6'], materials = ['Li2O', 'La2O3', 'TiO2'])
     Li2La2TiO6   1.0   1.0   1.0
 ```
 
-#### ```make_compositions```
+### ```make_compositions```
 This function returns the composition formula and the amount of all elements contained as a pandas.DataFrame by giving the raw materials and the mixing ratio.
 ```python
 make_compositions(materials = ['Li2O', 'La2O3', 'TiO2'], ratio = [[1, 2, 3]])
