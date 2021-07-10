@@ -1,0 +1,1 @@
+docker container run -it --rm --name element-recognition --mount type=bind,src=$(pwd),dst=/$(basename $(pwd)) yu9824/element_recognition:v1.0.1

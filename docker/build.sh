@@ -1,0 +1,1 @@
+docker image build -t yu9824/element_recognition:v1.0.1 docker
