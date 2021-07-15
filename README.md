@@ -1,4 +1,8 @@
 # Element Recognition
+![python_badge](https://img.shields.io/pypi/pyversions/element-recognition)
+![license_badge](https://img.shields.io/pypi/l/element-recognition)
+![Total_Downloads_badge](https://pepy.tech/badge/element-recognition)
+
 ## What is this.
 A package that organizes compositions written as strings into pandas.DataFrames, or conversely, generates compositions from mixing ratios by using only `numpy` and `pandas`.
 
