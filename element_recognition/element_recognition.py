@@ -11,7 +11,7 @@ from copy import copy
 from math import ceil, floor
 
 
-default_elements = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
+DEFAULT_ELEMENTS = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
 # --- tools ---
 def _flatten_and_trim(x):
     # とにかく一次元のリスト (or np.ndarray) 化
@@ -40,7 +40,7 @@ def element_recognition(compositions, elements = None):
     '''
 
     if elements is None:
-        elements = default_elements
+        elements = DEFAULT_ELEMENTS
 
     lst_compositions = _flatten_and_trim(compositions)
 
@@ -257,8 +257,9 @@ def make_compositions(materials, ratio = None, easy = True, max_comp = 15, front
         front = [ele for ele in front if ele not in back]
 
     # 何も入力されなければ自動生成
+    p = product(np.arange(max_comp+1), repeat = len(materials))
     if ratio is None:
-        ratio = [i for i in product(np.arange(max_comp), repeat = len(materials)) if sum(i) == max_comp] if easy else [i for i in product(np.arange(max_comp), repeat = len(materials)) if sum(i) != 0]
+        ratio = [i for i in p if sum(i) == max_comp] if easy else [i for i in p if sum(i) != 0]
     ratio = np.array(ratio)
 
     if len(ratio.shape) == 1 and ratio.shape[0] == len(materials):
