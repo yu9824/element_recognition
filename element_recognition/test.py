@@ -5,3 +5,5 @@ if __name__ == '__main__':
     materials = ['Li2O', 'La2O3', 'TiO2']
     df = get_ratio(products, materials)
     print(df)
+
+    print(make_compositions(materials))
