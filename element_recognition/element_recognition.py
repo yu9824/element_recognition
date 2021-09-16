@@ -15,14 +15,11 @@ DEFAULT_ELEMENTS = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", 
 # --- tools ---
 def _flatten_and_trim(x):
     # とにかく一次元のリスト (or np.ndarray) 化
-    if type(x) == np.ndarray:
-        y = x.flatten()
-    elif type(x) == str:
-        y = [x]
-    else:
-        y = np.array(x).flatten()
+    if isinstance(x, str):
+        x = [x]
+    _x = np.array(x).ravel()
     # 空白を削除してリストとして統一
-    return list(map(lambda x:x.replace(' ',''), y))
+    return list(map(lambda x:x.replace(' ',''), _x))
 
 # --- main function ---
 def element_recognition(compositions, elements = None):
