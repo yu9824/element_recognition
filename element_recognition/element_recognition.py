@@ -14,11 +14,29 @@ from math import ceil, floor
 
 DEFAULT_ELEMENTS = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
 # --- tools ---
-def _check_value(x):
+def _check_value(x:str) -> float:
+    """check value of the elements
+
+    Parameters
+    ----------
+    x : str
+
+    Examples
+    ----------
+    >>> _check_value('1.2')
+    1.2
+    >>> _check_value('1/2')
+    0.5
+
+    Returns
+    -------
+    float
+        checked value
+    """
     c = Counter(x)
     if '/' in c and c['/'] == 1:
-        _a, _b = x.split('/')
-        return float(_a) / float(_b)
+        _a, _b = map(float, x.split('/'))
+        return _a / _b
     else:
         return float(x)
 
@@ -31,7 +49,7 @@ def _flatten_and_trim(x):
     return list(map(lambda x:x.replace(' ',''), _x))
 
 # --- main function ---
-def element_recognition(compositions, elements = None):
+def element_recognition(compositions, elements = None) -> pd.DataFrame:
     '''
     Parameters
     ----------
@@ -133,7 +151,7 @@ def element_recognition(compositions, elements = None):
     return df_output
 
 
-def get_ratio(products, materials, match_all = True, elements = None):
+def get_ratio(products, materials, exact = True, elements = None) -> pd.DataFrame:
     '''
     Parameters
     ----------
@@ -143,7 +161,7 @@ def get_ratio(products, materials, match_all = True, elements = None):
     materials: list
         原料．リスト．無駄な原料を入れると計算できなくなることが多いので入れるべきではない．(必須)
     
-    mathch_all: bool, default True
+    exact: bool, default True
         検算してすべての元素の割合が合ってるかを確かめ，一つでも元素の数が合わないとき，Noneとして返す．
 
     elements: list, default None.
@@ -156,11 +174,11 @@ def get_ratio(products, materials, match_all = True, elements = None):
 
     Examples
     ----------
-    >>> materials = ['Li2O', 'LaO3', 'TiO2']
-    >>> products = ['Li2LaTiO6']
+    >>> materials = ['Li2O', 'La2O3', 'TiO2']
+    >>> products = ['Li2La2TiO6']
     >>> get_ratio(products, materials)
-               Li2O  LaO3  TiO2
-    Li2LaTiO6   1.0   1.0   1.0
+                Li2O  La2O3  TiO2
+    Li2La2TiO6   1.0    1.0   1.0
     '''
     products = _flatten_and_trim(products)
     materials = _flatten_and_trim(materials)
@@ -193,21 +211,10 @@ def get_ratio(products, materials, match_all = True, elements = None):
             print(materials_nonzero, '\n', products_nonzero)
             raise ValueError("We can't solve.\nWe can't get square matrix.")
     else:
-        df_output = pd.DataFrame()
-        for name, series in products_nonzero.iterrows():
-            matrix = materials_nonzero.to_numpy().transpose() / series.to_numpy()
-            boolean = np.all(matrix, axis = 1)
-            if np.sum(boolean) != 0:
-                sr_x = pd.Series([1 / matrix[boolean].flatten()[0] if boo else 0 for boo in boolean], index = materials_nonzero.columns, name = name)
-                df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
-                continue
-            else:
-                print(materials_nonzero, '\n', products_nonzero)
-                raise ValueError("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
-        else:
-            return df_output.transpose()
+        raise ValueError("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
 
     df_output = pd.DataFrame()
+    _srs = []
     for name, series in products_nonzero.iterrows():
         b = np.delete(series.to_numpy(), del_index)
         try:
@@ -215,20 +222,24 @@ def get_ratio(products, materials, match_all = True, elements = None):
         except np.linalg.LinAlgError:
             raise np.linalg.LinAlgError("We can't solve.\n", A, b)
         sr_x = pd.Series(x, index = materials_nonzero.columns, name = name)
-        if match_all:
+        if exact:
             ar_memo = np.zeros(df_products.shape[1])
             for y, z in zip(x, df_materials.to_numpy()):
                 ar_memo += y * z
             if np.allclose(ar_memo, df_products.loc[name].to_numpy()):    # すべての元素が検算で正しいとされるならば
-                df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
+                # df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
+                _srs.append(sr_x)
             else:
-                df_output = pd.concat([df_output, pd.Series([None] * len(materials_nonzero.columns), index = materials_nonzero.columns, name = name)], axis = 1, sort = False)
+                _srs.append(pd.Series([None] * len(materials_nonzero.columns), index = materials_nonzero.columns, name = name))
+                # df_output = pd.concat([df_output, pd.Series([None] * len(materials_nonzero.columns), index = materials_nonzero.columns, name = name)], axis = 1, sort = False)
         else:
-            df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
-    return df_output.transpose()
+            _srs.append(sr_x)
+            # df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
+    df_output = pd.concat(_srs, axis=1).transpose()
+    return df_output
 
 
-def make_compositions(materials, ratio = None, easy = True, max_comp = 15, front = None, back = None, max_show_prec = 3, elements = None):
+def make_compositions(materials, ratio = None, easy = True, max_comp:int = 15, front = None, back = None, max_show_prec:int = 3, elements = None) -> pd.DataFrame:
     '''
     Parameters
     ----------
@@ -339,26 +350,26 @@ def make_compositions(materials, ratio = None, easy = True, max_comp = 15, front
 
 
 if __name__ == '__main__':
-    from pdb import set_trace
+    # from pdb import set_trace
     # pd.set_option('display.max_columns', 150)
 
     # products = ['LaO3', 'Li2LaO']
     # # products = 'Li0.33La0.5TiO3'
     # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6']
     # # products = ['Li2LaTiO6', 'Li0.33La0.5TiO3', 'Li2LaTiO6', 'Li2O']
-    materials = ['Li2O', 'LaO3', 'TiO2']
+    # materials = ['Li2O', 'LaO3', 'TiO2']
 
     # # products = 'LiLaO2'
     # # products = ['Li2La2O4', 'LiLaO2']
     # # materials = ['Li2TiO3', 'Li2BaO3', 'LiLaO2']
 
     # df_er = element_recognition(products)
-    # df_r = Ratio(products, materials, match_all = True)
+    # df_r = Ratio(products, materials, exact = True)
     # print(df_r)
     # # print(df_er, df_r)
 
-    df_m = make_compositions(materials, ratio = [2/3, 2/3, 3])
-    print(df_m)
+    # df_m = make_compositions(materials, ratio = [2/3, 2/3, 3])
+    # print(df_m)
     # # print(df_m)
-    # from doctest import testmod
-    # testmod(verbose=True)
+    from doctest import testmod
+    testmod(verbose=True)

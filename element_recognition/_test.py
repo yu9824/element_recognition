@@ -3,7 +3,7 @@ if __name__ == '__main__':
     import numpy as np
     import pandas as pd
 
-    products = ['Li2La2O4', 'Li0.5La1/2TiO3', '(LiLa)1/2TiO3']
+    products = ['Li2La2O4', 'Li0.5La1/2TiO3', '(LiLa)1/2TiO3', 'Li2O']
     materials = ['Li2O', 'La2O3', 'TiO2']
     df = get_ratio(products, materials)
     print(df)
