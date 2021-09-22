@@ -211,7 +211,7 @@ def make_compositions(materials, ratio = None, easy = True, max_comp = 15, front
     Parameters
     ----------
     materials : list
-        e.g.) ['Li2O', 'LaO3', 'TiO2']
+        e.g.) ['Li2O', 'La2O3', 'TiO2']
 
     ratio: 2D-list (pd.DataFrame, np.ndarray etc.), default None
         If no input is given, an appropriate composition is generated.
