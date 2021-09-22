@@ -2,6 +2,7 @@
 Copyright © 2021 yu9824
 '''
 
+from collections import Counter
 import numpy as np
 import pandas as pd
 import re
@@ -13,6 +14,14 @@ from math import ceil, floor
 
 DEFAULT_ELEMENTS = ("H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og")
 # --- tools ---
+def _check_value(x):
+    c = Counter(x)
+    if '/' in c and c['/'] == 1:
+        _a, _b = x.split('/')
+        return float(_a) / float(_b)
+    else:
+        return float(x)
+
 def _flatten_and_trim(x):
     # とにかく一次元のリスト (or np.ndarray) 化
     if isinstance(x, str):
@@ -53,7 +62,7 @@ def element_recognition(compositions, elements = None):
             polyatomic_ion.append(ele)
 
 
-    ratio_ = np.zeros([len(lst_compositions), len(elements)])
+    ratio_ = np.zeros([len(lst_compositions), len(elements)], dtype=float)
     for i, comp in enumerate(lst_compositions):
         del_index = [j for j, x in enumerate(comp) if x.isupper() or x in delimiter]    # 大文字や()のときで区切り文字．
 
@@ -62,14 +71,21 @@ def element_recognition(compositions, elements = None):
             del_index = [j for j in del_index if j <= k or k + len(poly) <= j]
 
         dict_comp = {}  # key: index(元素の位置), value: value(組成数), symbol(元素記号, 多原子イオンも含む)
-        dict_brackets = {'f':[], 'b':[], 'value':[]}    # かっこの開始位置 (f)， 終了位置 (b), かっこ内の元素を何倍するか (value) を取っておく辞書
+        dict_brackets = {
+            'f':[],     # かっこの開始位置
+            'b':[],     # かっこの終了位置
+            'value':[]  # かっこ内の元素を何倍するか
+        }
         for j in range(len(del_index)): #'(', ')', 'polyatomic_ion', 'monatomic_ion'がそれぞれどこか記録．
             # aとして抜き出す部分を取り出す．
             a = comp[del_index[j]:] if j == len(del_index) - 1 else comp[del_index[j]:del_index[j+1]]
 
             # 取り出したaを数値なのか，()なのかなど認識し，数字と元素に分けるなどする．
             if a in polyatomic_ion: #'NH4'(polyatomic_ion)
-                dict_comp[del_index[j]] = {'value':1.0, 'symbol':a}
+                dict_comp[del_index[j]] = {
+                    'value':1.0,
+                    'symbol':a,
+                }
             elif a == delimiter[0]: #'('
                 dict_brackets['f'].append(del_index[j])
             elif a == delimiter[1]: #')'
@@ -77,14 +93,20 @@ def element_recognition(compositions, elements = None):
                 dict_brackets['value'].append(1.0)
             elif delimiter[1] in a: #')n'
                 dict_brackets['b'].append(del_index[j])
-                dict_brackets['value'].append(float(a.strip(delimiter[1])))
+                dict_brackets['value'].append(_check_value(a.strip(delimiter[1])))
             else:   #monatomic_ion
                 for k, s in enumerate(a):
                     if not s.isalpha():
-                        dict_comp[del_index[j]] = {'value':float(a[k:]), 'symbol':a[:k]}
+                        dict_comp[del_index[j]] = {
+                            'value':_check_value(a[k:]),
+                            'symbol':a[:k],
+                        }
                         break
-                else:   #最後までs.isalpha() == Falseとならなかった　(数字が現れなかった) 場合．
-                    dict_comp[del_index[j]] = {'value':1.0, 'symbol':a}
+                else:   #最後までs.isalpha() == Falseとならなかった (数字が現れなかった) 場合．
+                    dict_comp[del_index[j]] = {
+                        'value':1.0,
+                        'symbol':a,
+                    }
 
         #()のペアを一致させるための処理
         dict_brackets['f'].reverse()
@@ -229,7 +251,7 @@ def make_compositions(materials, ratio = None, easy = True, max_comp = 15, front
         An element that is preferentially placed behind a composition when it is generated. The more elements are in front, the more elements are in the back. If duplicate elements are specified, back is given priority.
 
     max_show_prec: int, default 3
-        The maximum number of decimal places to display when creating a compound.
+        The maximum number of float places to display when creating a compound.
 
     elements: list, default None.
         This is variable for element_recognition function.
