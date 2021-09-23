@@ -6,6 +6,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 import re
+import sys
 
 from itertools import combinations, product
 from copy import copy
@@ -186,37 +187,44 @@ def get_ratio(products, materials, exact = True, elements = None) -> pd.DataFram
     df_products = element_recognition(products)
     df_materials = element_recognition(materials)
 
-    products_nonzero = df_products.iloc[:, list(set(df_products.values.nonzero()[1]))] # pd.Series
-    materials_nonzero = df_materials.loc[:, products_nonzero.columns].transpose() # pd.Seriesに合わせてindexに元素 ('Li'etc.) が来るようにtranspose()
+    # to deal with the compound with less elements
+    st_idx_elements = set(df_products.values.nonzero()[1]) | set(df_materials.values.nonzero()[1])
+    lst_elements_contained = df_products.columns[list(st_idx_elements)]
+
+    products_nonzero = df_products[lst_elements_contained]
+    materials_nonzero = df_materials[lst_elements_contained].transpose() # pd.Seriesに合わせてindexに元素 ('Li'etc.) が来るようにtranspose()
 
     counta_nonzero = np.count_nonzero(materials_nonzero, axis = 1)
-    index_list = [list(np.where(counta_nonzero == n)[0]) for n in range(len(counta_nonzero), 0, -1) if len(np.where(counta_nonzero == n)[0]) != 0]  # 降順でmaterialsに共通で入ってる数が多い順に並べ， 同じ数共通で入っている場合は二次元ベクトルで表現
+    lst_idxes = [list(np.where(counta_nonzero == n)[0]) for n in range(len(counta_nonzero), 0, -1) if len(np.where(counta_nonzero == n)[0]) != 0]  # 降順でmaterialsに共通で入ってる数が多い順に並べ， 同じ数共通で入っている場合は二次元ベクトルで表現
+
+    # Ax = bのAを正方行列かつrank(A)=len(A)に整えるための削除候補に関するリストを作成
+    del_idx_cand = [np.where(counta_nonzero == 0)[0].tolist()] # すべてが0 (materialsには入ってないけどproductsには入ってる元素) の組成比を削除． これはもし空集合であったとしても削除をしない，という条件を探れるので良い．これを入れた理由は，基本的にnon_zeroの数が多い方から削除候補として用いているため，non_zero = 0が最後に削除されることになってしまうが， この条件は本来計算に含まれてはいけない事項であるから．
+    _idx_del_temp = []
+    for idxes in lst_idxes:
+        for i in range(1, len(idxes)):
+            del_idx_cand.extend([
+                _idx_del_temp + list(_c) for _c in combinations(idxes, i)
+            ])
+        else:
+            _idx_del_temp += idxes
+            del_idx_cand.append(copy(_idx_del_temp))
 
     # Ax = bのAを正方行列かつrank(A)=len(A)に整える．
-    del_index_cand = [np.where(counta_nonzero == 0)[0]] # すべてが0 (materialsには入ってないけどproductsには入ってる元素) の組成比を削除． これはもし空集合であったとしても削除をしない，という条件を探れるので良い．　これを入れた理由は，基本的にnon_zeroの数が多い方から削除候補として用いているため，non_zero = 0が最後に削除されることになってしまうが， この条件は本来計算に含まれて胃はいけない事項であるから．
-    indexes_memo = []
-    for indexes in index_list:
-        for i in range(1, len(indexes)):
-            del_index_cand.extend(indexes_memo + list(map(list, combinations(indexes, i))))
-        else:
-            indexes_memo += indexes
-            del_index_cand.append(copy(indexes_memo))
-
     if np.linalg.matrix_rank(materials_nonzero.to_numpy()) >= len(materials):
-        for del_index in del_index_cand:
-            A = np.delete(materials_nonzero.to_numpy(), del_index, axis = 0)
+        for del_idx in del_idx_cand:
+            A = np.delete(materials_nonzero.to_numpy(), del_idx, axis = 0)
             if np.linalg.matrix_rank(A) == len(materials) and A.shape[0] == A.shape[1]:   # 正方行列で， またはそれと同じ大きさのrankを持っているとき
                 break
         else:
-            print(materials_nonzero, '\n', products_nonzero)
+            sys.stdout.write('{0}\n{1}'.format(materials_nonzero, products_nonzero))
             raise ValueError("We can't solve.\nWe can't get square matrix.")
     else:
+        sys.stdout.write('{0}\n{1}'.format(materials_nonzero, products_nonzero))
         raise ValueError("We can't solve.\nThe rank(A) is lower than a number of variables(materials).")
 
-    df_output = pd.DataFrame()
     _srs = []
     for name, series in products_nonzero.iterrows():
-        b = np.delete(series.to_numpy(), del_index)
+        b = np.delete(series.to_numpy(), del_idx)
         try:
             x = np.linalg.solve(A, b)
         except np.linalg.LinAlgError:
@@ -227,14 +235,11 @@ def get_ratio(products, materials, exact = True, elements = None) -> pd.DataFram
             for y, z in zip(x, df_materials.to_numpy()):
                 ar_memo += y * z
             if np.allclose(ar_memo, df_products.loc[name].to_numpy()):    # すべての元素が検算で正しいとされるならば
-                # df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
                 _srs.append(sr_x)
             else:
                 _srs.append(pd.Series([None] * len(materials_nonzero.columns), index = materials_nonzero.columns, name = name))
-                # df_output = pd.concat([df_output, pd.Series([None] * len(materials_nonzero.columns), index = materials_nonzero.columns, name = name)], axis = 1, sort = False)
         else:
             _srs.append(sr_x)
-            # df_output = pd.concat([df_output, sr_x], axis = 1, sort = False)
     df_output = pd.concat(_srs, axis=1).transpose()
     return df_output
 
@@ -365,11 +370,11 @@ if __name__ == '__main__':
 
     # df_er = element_recognition(products)
     # df_r = Ratio(products, materials, exact = True)
-    # print(df_r)
-    # # print(df_er, df_r)
+    # sys.stdout.write(df_r)
+    # # sys.stdout.write(df_er, df_r)
 
     # df_m = make_compositions(materials, ratio = [2/3, 2/3, 3])
-    # print(df_m)
-    # # print(df_m)
+    # sys.stdout.write(df_m)
+    # # sys.stdout.write(df_m)
     from doctest import testmod
     testmod(verbose=True)

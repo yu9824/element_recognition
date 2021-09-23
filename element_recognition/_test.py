@@ -20,4 +20,6 @@ if __name__ == '__main__':
     df = get_ratio(pd.DataFrame(products), materials)
     print(df)
 
+    print(get_ratio('Li2O', materials=materials))
+
     print(make_compositions(materials))
