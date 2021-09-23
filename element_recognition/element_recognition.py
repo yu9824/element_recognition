@@ -41,7 +41,7 @@ def _check_value(x:str) -> float:
     else:
         return float(x)
 
-def _flatten_and_trim(x):
+def check_compositions(x):
     # とにかく一次元のリスト (or np.ndarray) 化
     if isinstance(x, str):
         x = [x]
@@ -67,7 +67,7 @@ def element_recognition(compositions, elements = None) -> pd.DataFrame:
     if elements is None:
         elements = DEFAULT_ELEMENTS
 
-    lst_compositions = _flatten_and_trim(compositions)
+    lst_compositions = check_compositions(compositions)
 
     delimiter = ('(', ')')  #'()'認識用
 
@@ -181,8 +181,8 @@ def get_ratio(products, materials, exact = True, elements = None) -> pd.DataFram
                 Li2O  La2O3  TiO2
     Li2La2TiO6   1.0    1.0   1.0
     '''
-    products = _flatten_and_trim(products)
-    materials = _flatten_and_trim(materials)
+    products = check_compositions(products)
+    materials = check_compositions(materials)
 
     df_products = element_recognition(products)
     df_materials = element_recognition(materials)
