@@ -184,8 +184,8 @@ def get_ratio(products, materials, exact = True, elements = None) -> pd.DataFram
     products = check_compositions(products)
     materials = check_compositions(materials)
 
-    df_products = element_recognition(products)
-    df_materials = element_recognition(materials)
+    df_products = element_recognition(products, elements=elements)
+    df_materials = element_recognition(materials, elements=elements)
 
     # to deal with the compound with less elements
     st_idx_elements = set(df_products.values.nonzero()[1]) | set(df_materials.values.nonzero()[1])
@@ -302,7 +302,7 @@ def make_compositions(materials, ratio = None, easy = True, max_comp:int = 15, f
     elif len(ratio.shape) != 2 or ratio.shape[1] != len(materials):
         raise ValueError('A shape of ratio is not correct; The shape is', ratio.shape)
 
-    df_materials = element_recognition(materials)
+    df_materials = element_recognition(materials, elements=elements)
     df_products = pd.DataFrame(ratio @ df_materials.to_numpy(), columns = df_materials.columns)
 
     compositions = []
