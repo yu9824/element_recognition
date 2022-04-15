@@ -26,7 +26,7 @@ from element_recognition import get_ratio, make_compositions
 ### ```get_ratio```
 This is a function that returns a pandas.DataFrame of mixing ratios given a compound and a raw material.
 ```python
-get_ratio(products = ['LiLa2TiO6'], materials = ['Li2O', 'La2O3', 'TiO2'])
+get_ratio(products = ['Li2La2TiO6'], materials = ['Li2O', 'La2O3', 'TiO2'])
 ```
 ```
                Li2O  La2O3  TiO2
